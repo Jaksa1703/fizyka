@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Symulacja Wahadeł</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100vh;
+      background-color: #333; /* Ciemne tło dla tytułu */
+      color: #fff;
+    }
+
+    header {
+      background-color: #222; /* Tło kontenera */
+      padding: 10px;
+      text-align: center;
+      width: 100%;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      text-align: center;
+      background-color: #222; /* Tło kontenera */
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      max-width: 800px;
+      width: 100%;
+    }
+
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    input[type="number"],
+    button {
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: calc(100% - 18px);
+      background-color: #222; /* Tło kontenera */
+      color: #fff;
+    }
+
+    input[type="number"]:read-only {
+      background-color: #333; /* Ciemniejsze tło dla readonly */
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    button {
+      width: auto;
+      cursor: pointer;
+    }
+
+    canvas {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    #timeDifference {
+      margin-bottom: 20px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: calc(100% - 42px);
+      text-align: left;
+    }
+
+    p {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h3>Symulacja Ruchu Wahadeł</h3>
+    <p>Autor: Jakub Dzwończyk, Informatyka II rok</p>
+  </header>
+
+  <div class="container">
+    <label for="length1">Długość wahadła 1 (cm):</label>
+    <input type="number" id="length1" pattern="[0-9]+" value="50">
+
+    <label for="angle1">Kąt początkowy wahadła 1 (stopnie):</label>
+    <input type="number" id="angle1" pattern="[0-9]+" value="45">
+
+    <label for="length2">Długość wahadła 2 (cm):</label>
+    <input type="number" id="length2" pattern="[0-9]+" value="75">
+
+    <label for="angle2">Kąt początkowy wahadła 2 (stopnie):</label>
+    <input type="number" id="angle2" pattern="[0-9]+" value="-30">
+
+    <label for="gravity">Przyspieszenie grawitacyjne (m/s^2):</label>
+    <input type="number" id="gravity" pattern="[0-9]+" value="9.81">
+
+    <button onclick="simulatePendulums()">Uruchom symulację</button>
+
+    <div class="canvas-container">
+      <canvas id="myCanvas" height="200"></canvas>
+    </div>
+
+    <div id="timeDifference"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function createPendulum(x, length, gravity) {
+      return {
+        x: x,
+        y: 20,
+        length: length * 5,
+        angle: Math.PI / 4,
+        gravity: gravity,
+        angularVelocity: 0,
+        angularAcceleration: 0
+      };
+    }
+
+    function updatePendulum(pendulum) {
+      const gOverL = pendulum.gravity / pendulum.length;
+      pendulum.angularAcceleration = -gOverL * Math.sin(pendulum.angle);
+      pendulum.angularVelocity += pendulum.angularAcceleration;
+      pendulum.angle += pendulum.angularVelocity;
+    }
+
+    function drawPendulum(pendulum, color) {
+      const ballX = pendulum.x + pendulum.length * Math.sin(pendulum.angle);
+      const ballY = pendulum.y + pendulum.length * Math.cos(pendulum.angle);
+
+      ctx.beginPath();
+      ctx.moveTo(pendulum.x, pendulum.y);
+      ctx.lineTo(ballX, ballY);
+      ctx.strokeStyle = color;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, 5, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function calculateTimePeriod(pendulum) {
+      return 2 * Math.PI * Math.sqrt(pendulum.length / pendulum.gravity);
+    }
+
+    function simulatePendulums() {
+      const lengthInput1 = document.getElementById('length1');
+      const lengthInput2 = document.getElementById('length2');
+      const length1 = parseFloat(lengthInput1.value);
+      const length2 = parseFloat(lengthInput2.value);
+
+      const angleInput1 = document.getElementById('angle1');
+      const angleInput2 = document.getElementById('angle2');
+      const angle1 = parseFloat(angleInput1.value);
+      const angle2 = parseFloat(angleInput2.value);
+
+      const gravityInput = document.getElementById('gravity');
+      const gravity = parseFloat(gravityInput.value);
+
+      if (!isNaN(length1) && !isNaN(length2) && !isNaN(angle1) && !isNaN(angle2) && !isNaN(gravity)) {
+        const pendulum1 = createPendulum(canvas.width / 4, length1, gravity);
+        const pendulum2 = createPendulum((canvas.width / 4) * 3, length2, gravity);
+
+        pendulum1.angle = (angle1 * Math.PI) / 180; // Konwersja stopni na radiany
+        pendulum2.angle = (angle2 * Math.PI) / 180;
+
+        const frames = 180;
+        let frameCount = 0;
+
+        function animatePendulums() {
+          updatePendulum(pendulum1);
+          updatePendulum(pendulum2);
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawPendulum(pendulum1, 'blue');
+          drawPendulum(pendulum2, 'red');
+
+          frameCount++;
+
+          if (frameCount < frames) {
+            requestAnimationFrame(animatePendulums);
+          } else {
+            const timeDifference = Math.abs(calculateTimePeriod(pendulum1) - calculateTimePeriod(pendulum2));
+            document.getElementById('timeDifference').innerText = `Różnica czasu: ${timeDifference.toFixed(2)} sekund`;
+          }
+        }
+
+        animatePendulums();
+      }
+    }
+  </script>
+</body>
+</html>
